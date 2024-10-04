@@ -73,6 +73,11 @@ int main(void)
 	LCD_DisplayStringAtLineMode(39, "copyright xyz", CENTER_MODE);
 
 	int cnt = 0;
+	int cnt2 = 0;
+
+	int select = 0;
+
+	HAL_GPIO_Init(GPIOA, User);
 	/* Infinite loop */
 	while (1)
 	{
