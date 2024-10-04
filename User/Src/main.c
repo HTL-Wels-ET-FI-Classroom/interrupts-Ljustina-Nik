@@ -17,6 +17,7 @@
 #include "stm32f429i_discovery_ts.h"
 #include "ts_calibration.h"
 
+
 /* Private includes ----------------------------------------------------------*/
 
 /* Private typedef -----------------------------------------------------------*/
@@ -26,8 +27,6 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
-static int GetUserButtonPressed(void);
-static int GetTouchState (int *xCoord, int *yCoord);
 
 /**
  * @brief This function handles System tick timer.
@@ -36,6 +35,15 @@ void SysTick_Handler(void)
 {
 	HAL_IncTick();
 }
+
+volatile int timer_select = 0;
+
+void EXTI0_IRQHandler(void){
+		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+
+		timer_select = !timer_select;
+}
+
 
 /**
  * @brief  The application entry point.
@@ -72,12 +80,34 @@ int main(void)
 	LCD_SetColors(LCD_COLOR_MAGENTA, LCD_COLOR_BLACK); // TextColor, BackColor
 	LCD_DisplayStringAtLineMode(39, "copyright xyz", CENTER_MODE);
 
+	GPIO_InitTypeDef led;
+
+	led.Alternate = 0;
+	led.Mode = GPIO_MODE_OUTPUT_PP;
+	led.Pull = GPIO_NOPULL;
+	led.Speed = GPIO_SPEED_FAST;
+
+	led.Pin = GPIO_PIN_13;
+	HAL_GPIO_Init(GPIOG, &led);
+
 	int cnt = 0;
 	int cnt2 = 0;
 
-	int select = 0;
+	HAL_NVIC_EnableIRQ(EXTI0_IRQn);
 
-	HAL_GPIO_Init(GPIOA, User);
+	GPIO_InitTypeDef User;
+	User.Alternate = 0;
+	User.Mode = GPIO_MODE_IT_RISING;
+	User.Pull = GPIO_NOPULL;
+	User.Speed = GPIO_SPEED_FAST;
+
+	User.Pin = GPIO_PIN_0;
+	HAL_GPIO_Init(GPIOA, &User);
+
+
+
+
+
 	/* Infinite loop */
 	while (1)
 	{
@@ -85,18 +115,19 @@ int main(void)
 		HAL_Delay(100);
 
 		// display timer
-		cnt++;
+
 		LCD_SetFont(&Font20);
 		LCD_SetTextColor(LCD_COLOR_BLUE);
 		LCD_SetPrintPosition(5, 0);
 		printf("   Timer: %.1f", cnt/10.0);
+		LCD_SetPrintPosition(7, 0);
+		printf("   Timer2: %.1f", cnt2/10.0);
 
-		// test touch interface
-		int x, y;
-		if (GetTouchState(&x, &y)) {
-			LCD_FillCircle(x, y, 5);
+		if(timer_select == 0){
+			cnt++;
+		}else if(timer_select == 1){
+			cnt2++;
 		}
-
 
 	}
 }
@@ -106,9 +137,7 @@ int main(void)
  * @param none
  * @return 1 if user button input (PA0) is high
  */
-static int GetUserButtonPressed(void) {
-	return (GPIOA->IDR & 0x0001);
-}
+
 
 /**
  * Check if touch interface has been used
@@ -116,23 +145,6 @@ static int GetUserButtonPressed(void) {
  * @param yCoord y coordinate of touch event in pixels
  * @return 1 if touch event has been detected
  */
-static int GetTouchState (int* xCoord, int* yCoord) {
-	void    BSP_TS_GetState(TS_StateTypeDef *TsState);
-	TS_StateTypeDef TsState;
-	int touchclick = 0;
 
-	TS_GetState(&TsState);
-	if (TsState.TouchDetected) {
-		*xCoord = TsState.X;
-		*yCoord = TsState.Y;
-		touchclick = 1;
-		if (TS_IsCalibrationDone()) {
-			*xCoord = TS_Calibration_GetX(*xCoord);
-			*yCoord = TS_Calibration_GetY(*yCoord);
-		}
-	}
-
-	return touchclick;
-}
 
 
