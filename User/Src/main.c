@@ -27,6 +27,12 @@
 /* Private variables ---------------------------------------------------------*/
 
 /* Private function prototypes -----------------------------------------------*/
+static int GetUserButtonPressed(void);
+static int GetTouchState (int *xCoord, int *yCoord);
+
+
+
+
 
 /**
  * @brief This function handles System tick timer.
@@ -37,11 +43,18 @@ void SysTick_Handler(void)
 }
 
 volatile int timer_select = 0;
+volatile int colour_select = 0;
 
 void EXTI0_IRQHandler(void){
-		__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_0);
 
-		timer_select = !timer_select;
+	timer_select = !timer_select;
+}
+
+void EXTI3_IRQn_IRQHandler(void){
+	__HAL_GPIO_EXTI_CLEAR_IT(GPIO_PIN_3);
+
+	colour_select = !colour_select;
 }
 
 
@@ -104,6 +117,17 @@ int main(void)
 	User.Pin = GPIO_PIN_0;
 	HAL_GPIO_Init(GPIOA, &User);
 
+	HAL_NVIC_EnableIRQ(EXTI3_IRQn);
+
+	GPIO_InitTypeDef Colour;
+	Colour.Alternate = 0;
+	Colour.Mode = GPIO_MODE_IT_RISING;
+	Colour.Pull = GPIO_PULLDOWN;
+	Colour.Speed = GPIO_SPEED_FAST;
+
+	Colour.Pin = GPIO_PIN_3;
+	HAL_GPIO_Init(GPIOC, &Colour);
+
 
 
 
@@ -117,7 +141,14 @@ int main(void)
 		// display timer
 
 		LCD_SetFont(&Font20);
-		LCD_SetTextColor(LCD_COLOR_BLUE);
+
+		if(colour_select == 1){
+			LCD_SetTextColor(LCD_COLOR_BLUE);
+			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_13);,
+		}else{
+			LCD_SetTextColor(LCD_COLOR_RED);
+		}
+
 		LCD_SetPrintPosition(5, 0);
 		printf("   Timer: %.1f", cnt/10.0);
 		LCD_SetPrintPosition(7, 0);
