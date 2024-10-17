@@ -144,7 +144,7 @@ int main(void)
 
 		if(colour_select == 1){
 			LCD_SetTextColor(LCD_COLOR_BLUE);
-			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_13);,
+			HAL_GPIO_TogglePin(GPIOG, GPIO_PIN_13);
 		}else{
 			LCD_SetTextColor(LCD_COLOR_RED);
 		}
